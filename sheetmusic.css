@@ -1,0 +1,29 @@
+.music-menu {
+    margin: 0;
+    padding: 0;
+}
+.music-menu ul {
+    list-style-type: none;
+    list-style-image: none;
+}
+.music-menu li {
+    display: inline-block;
+    margin: 0;
+    padding-right: 6px;
+    white-space: nowrap;
+}
+.music-menu a {
+    text-decoration: none;
+}
+
+.music-list {
+    margin-top: 2ex;
+}
+.music-list img {
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+}
+.music-list div {
+    margin-bottom: 4px;
+}
