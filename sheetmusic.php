@@ -255,6 +255,8 @@ HTML;
      */
     private function scanAndBuildInfo($isPrivate)
     {
+        if (!is_dir(SheetmusicOptions::getPath())) return;
+
         $music = $this->scanFiles($isPrivate);
 
         $data['last10']      = $this->last10($music);
