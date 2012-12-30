@@ -211,7 +211,7 @@ HTML;
      */
     public function addScriptsAction()
     {
-        wp_register_style('sheetmusic', __DIR__ . '/sheetmusic.css');
+        wp_register_style('sheetmusic', plugin_dir_url(__FILE__) . 'sheetmusic.css');
         wp_enqueue_style('sheetmusic');
     }
 
