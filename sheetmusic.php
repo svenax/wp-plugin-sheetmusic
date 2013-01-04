@@ -440,7 +440,7 @@ HTML;
         $data = array();
         switch ($type) {
         case 'last10':
-            $data = $this->data['last10'];
+            $data = (array)$this->data['last10'];
             break;
         case 'category':
             $data = (array)$this->data['category'][$subtype];
