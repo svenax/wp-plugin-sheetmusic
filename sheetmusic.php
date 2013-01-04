@@ -8,7 +8,7 @@ Author URI: http://svenax.net
 License: GPLv2 or later
 */
 /*
-Copyright 2013  Sven Axelsson  (email : sven@axelsson.name)
+Copyright 2013  Sven Axelsson  (email: sven@axelsson.name)
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License, version 2, as
@@ -24,42 +24,43 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
+require_once 'lib/class-admin-form.php';
+require_once 'lib/class-options.php';
+
 /**
- * WordPress options wrapper.
+ * Sheetmusic options wrapper.
  */
-final class SheetmusicOptions
+final class SOpts extends Options
 {
-    static private $opts = null;
-
-    static public function getPath()
+    /**
+     * Initialize and get the class singleton.
+     *
+     * @return SOpts
+     */
+    static public function instance()
     {
-        list($path, ) = self::getOpts();
-        return $path;
-    }
+        static $me = null;
 
-    static public function getUrl()
-    {
-        list( , $url) = self::getOpts();
-        return $url;
-    }
-
-    static public function hasPostData()
-    {
-        return !@empty($_POST['music_path']) && !@empty($_POST['music_url']);
-    }
-
-    static public function setFromPost()
-    {
-        self::$opts = array(@$_POST['music_path'], @$_POST['music_url']);
-        update_option('sheetmusic-options', self:: $opts);
-    }
-
-    static private function getOpts()
-    {
-        if (is_null(self::$opts)) {
-            self::$opts = get_option('sheetmusic-options', array(ABSPATH . 'music', '/music'));
+        if (is_null($me)) {
+            $defaults = array(
+                'musicPath' => ABSPATH . 'music',
+                'musicUrl' => '/music'
+            );
+            $me = new self('sheetmusic-options', $defaults);
         }
-        return self::$opts;
+
+        return $me;
+    }
+
+    public function hasPostData()
+    {
+        return !(@empty($_POST['music_path']) || @empty($_POST['music_url']));
+    }
+
+    public function setFromPost()
+    {
+        $this->musicPath = @$_POST['music_path'];
+        $this->musicUrl = @$_POST['music_url'];
     }
 }
 
@@ -105,7 +106,7 @@ class SheetmusicInfo
      */
     public function makeLink()
     {
-        $filePrefix = SheetmusicOptions::getUrl() . '/' . $this->pathPart;
+        $filePrefix = SOpts::instance()->musicUrl . '/' . $this->pathPart;
         $title = $this->name . "\nUpdated at: " . date('F j, Y, G:i:s', $this->updated);
         return sprintf(
             '<a href="%1$s.pdf" title="%2$s"><img src="%1$s.preview.png"></a>',
@@ -156,6 +157,9 @@ class Sheetmusic
      */
     public function initAction()
     {
+        // We haven't configured the plugin yet
+        if (!is_dir(SOpts::instance()->musicPath)) return;
+
         $isPrivate = is_user_logged_in();
         if (!file_exists($this->getCacheFileName($isPrivate))) {
             $this->scanAndBuildInfo($isPrivate);
@@ -177,31 +181,21 @@ class Sheetmusic
 
     public function adminMenuPage()
     {
-        if (SheetmusicOptions::hasPostData()) {
-            SheetmusicOptions::setFromPost();
+        if (SOpts::instance()->hasPostData()) {
+            SOpts::instance()->setFromPost();
             echo '<div class="updated"><p><strong>Settings saved.</strong></p></div>';
         }
 
-        $musicPath = SheetmusicOptions::getPath();
-        $musicUrl  = SheetmusicOptions::getUrl();
+        $frm = new AdminForm();
+        $frm->addTextField('Music File Path:', 'musicPath', SOpts::instance()->musicPath, 'code')
+            ->addTextField('Music Url:', 'musicUrl', SOpts::instance()->musicUrl, 'code')
+            ->addSubmitButton('Save Changes');
+
         echo <<<HTML
             <div class="wrap">
+            <div id="icon-options-general" class="icon32"><br></div>
             <h2>Sheetmusic Settings</h2>
-            <form name="sheetmusic" method="post">
-                <table class="form-table">
-                    <tr valign="top">
-                        <th scope="row">Music File Path:</th>
-                        <td><input type="text" name="music_path" id="music_path" value="{$musicPath}" class="regular-text code"></td>
-                    </tr>
-                    <tr valign="top">
-                        <th scope="row">Music Url:</th>
-                        <td><input type="text" name="music_url" id="music_url" value="{$musicUrl}" class="regular-text code"></td>
-                    </tr>
-                </table>
-                <p class="submit">
-                    <input type="submit" name="Submit" class="button-primary" value="Save Changes">
-                </p>
-            </form>
+            {$frm}
             </div>
 HTML;
     }
@@ -211,7 +205,7 @@ HTML;
      */
     public function addScriptsAction()
     {
-        wp_register_style('sheetmusic', plugin_dir_url(__FILE__) . 'sheetmusic.css');
+        wp_register_style('sheetmusic', plugins_url('sheetmusic') . '/sheetmusic.css');
         wp_enqueue_style('sheetmusic');
     }
 
@@ -255,8 +249,6 @@ HTML;
      */
     private function scanAndBuildInfo($isPrivate)
     {
-        if (!is_dir(SheetmusicOptions::getPath())) return;
-
         $music = $this->scanFiles($isPrivate);
 
         $data['last10']      = $this->last10($music);
@@ -277,7 +269,7 @@ HTML;
     private function scanFiles($isPrivate)
     {
         $music = array();
-        $iter = new RecursiveDirectoryIterator(SheetmusicOptions::getPath());
+        $iter = new RecursiveDirectoryIterator(SOpts::instance()->musicPath);
         foreach (new RecursiveIteratorIterator($iter) as $fs) {
             // Skip uninteresting files and dirs
             if ($fs->isDir() || substr($fs->getFilename(), -4) !== '.pdf') {
@@ -474,7 +466,7 @@ HTML;
      */
     private function getCacheFileName($isPrivate)
     {
-        return SheetmusicOptions::getPath() . '/cache.' . ($isPrivate ? 'priv' : 'pub');
+        return SOpts::instance()->musicPath . '/cache.' . ($isPrivate ? 'priv' : 'pub');
     }
 
     /**
@@ -485,7 +477,7 @@ HTML;
      */
     private function getPageUrl()
     {
-        $url = $_SERVER['REDIRECT_URL'] ? $_SERVER['REDIRECT_URL'] : $_SERVER['REQUEST_URI'];
+        $url = $_SERVER['REDIRECT_URL'] ?: $_SERVER['REQUEST_URI'];
         list($url, ) = explode('?', $url, 2);
 
         return $url;
