@@ -54,13 +54,13 @@ final class SOpts extends Options
 
     public function hasPostData()
     {
-        return !(@empty($_POST['music_path']) || @empty($_POST['music_url']));
+        return !(@empty($_POST['musicPath']) || @empty($_POST['musicUrl']));
     }
 
     public function setFromPost()
     {
-        $this->musicPath = @$_POST['music_path'];
-        $this->musicUrl = @$_POST['music_url'];
+        $this->musicPath = @$_POST['musicPath'];
+        $this->musicUrl = @$_POST['musicUrl'];
     }
 }
 
